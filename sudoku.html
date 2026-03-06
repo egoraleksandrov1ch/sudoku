@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Судоку">
+<title>数独 SUDOKU</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a35;
+    --accent: #c8a96e;
+    --accent2: #7eb8c9;
+    --accent3: #e07b7b;
+    --text: #e8e4dc;
+    --text-dim: #6b6b7a;
+    --text-dimmer: #3a3a48;
+    --highlight-same: rgba(200, 169, 110, 0.18);
+    --highlight-cell: rgba(200, 169, 110, 0.28);
+    --highlight-row: rgba(200, 169, 110, 0.07);
+    --error: #e07b7b;
+    --note-color: #7eb8c9;
+    --given-color: #e8e4dc;
+    --user-color: #c8a96e;
+  }
+
+  :root.light {
+    --bg: #f5f0e8;
+    --surface: #ffffff;
+    --surface2: #ede8df;
+    --border: #d0c8b8;
+    --accent: #a0783a;
+    --accent2: #3a7a92;
+    --accent3: #c0504040;
+    --text: #1a1814;
+    --text-dim: #7a7060;
+    --text-dimmer: #c0b8a8;
+    --highlight-same: rgba(160, 120, 58, 0.15);
+    --highlight-cell: rgba(160, 120, 58, 0.22);
+    --highlight-row: rgba(160, 120, 58, 0.06);
+    --error: #c04040;
+    --note-color: #3a7a92;
+    --given-color: #1a1814;
+    --user-color: #a0783a;
+  }
+
+  /* THEME TOGGLE */
+  .theme-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    margin-left: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .theme-toggle input { display: none; }
+
+  .theme-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5px;
+    font-size: 11px;
+  }
+
+  .theme-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1), background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  .theme-toggle.light-mode .theme-thumb {
+    transform: translateX(20px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* HEADER */
+  .header {
+    width: 100%;
+    padding: 18px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+  }
+
+  .logo {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-kanji {
+    font-size: 18px;
+    color: var(--text-dim);
+    font-weight: 300;
+  }
+
+  .timer-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .timer {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mistakes-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .mistake-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--text-dimmer);
+    transition: all 0.3s;
+  }
+
+  .mistake-dot.active { background: var(--error); border-color: var(--error); }
+
+  /* DIFFICULTY SELECTOR */
+  .diff-wrap {
+    width: 100%;
+    padding: 8px 16px 4px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .diff-wrap::-webkit-scrollbar { display: none; }
+
+  .diff-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .diff-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 500;
+  }
+
+  /* BOARD */
+  .board-wrap {
+    padding: 12px 12px 8px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    overflow: hidden;
+    width: min(100%, 420px);
+    aspect-ratio: 1;
+    position: relative;
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0.5px solid var(--border);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s;
+    background: var(--surface);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* thick borders for 3x3 boxes */
+  .cell[data-col="2"], .cell[data-col="5"] { border-right: 2px solid var(--accent); }
+  .cell[data-row="2"], .cell[data-row="5"] { border-bottom: 2px solid var(--accent); }
+
+  .cell.highlighted-row { background: var(--highlight-row); }
+  .cell.highlighted-same { background: var(--highlight-same); }
+  .cell.selected { background: var(--highlight-cell) !important; }
+  .cell.error .cell-value { color: var(--error) !important; }
+
+  .cell-value {
+    font-size: clamp(14px, 4.2vw, 22px);
+    font-weight: 500;
+    font-family: 'Noto Serif JP', serif;
+    color: var(--given-color);
+    transition: color 0.2s;
+    z-index: 1;
+  }
+
+  .cell-value.user { color: var(--user-color); }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 92%;
+    height: 92%;
+    position: absolute;
+    gap: 0;
+  }
+
+  .note-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(6px, 1.8vw, 9px);
+    color: var(--note-color);
+    font-family: 'DM Mono', monospace;
+    font-weight: 400;
+    opacity: 0;
+    transition: opacity 0.15s;
+    line-height: 1;
+  }
+
+  .note-num.visible { opacity: 1; }
+
+  /* CONTROLS */
+  .controls {
+    width: 100%;
+    max-width: 420px;
+    padding: 8px 16px;
+  }
+
+  .tools-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .tool-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tool-btn .tool-icon { font-size: 18px; }
+  .tool-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(126, 184, 201, 0.1); }
+  .tool-btn.smart-active { border-color: var(--accent); color: var(--accent); background: rgba(200, 169, 110, 0.1); }
+  .tool-btn.erase-btn { flex: 0.7; }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
+  .num-btn {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(15px, 4.5vw, 22px);
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .num-btn:active { background: var(--accent); color: var(--bg); transform: scale(0.92); }
+  .num-btn.depleted { opacity: 0.25; pointer-events: none; }
+
+  .action-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .action-btn.new-game { border-color: var(--accent); color: var(--accent); }
+
+  /* OVERLAY */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13,13,15,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    gap: 24px;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+
+  .overlay.visible { opacity: 1; pointer-events: all; }
+
+  .overlay-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 36px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  .overlay-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  .overlay-time {
+    font-size: 42px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    color: var(--text);
+  }
+
+  .overlay-btn {
+    padding: 14px 48px;
+    border-radius: 40px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .overlay-btn:active { background: var(--accent); color: var(--bg); }
+
+  /* decorative line */
+  .deco-line {
+    width: 100%;
+    max-width: 420px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 2px 0;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  .pop { animation: pop 0.18s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <span class="logo-kanji">数独</span>
+    SUDOKU
+    <label class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+      <div class="theme-track">
+        <span>🌙</span>
+        <span>☀️</span>
+      </div>
+      <div class="theme-thumb" id="themeThumb">🌙</div>
+    </label>
+  </div>
+  <div class="timer-wrap">
+    <div class="timer" id="timer">00:00</div>
+    <div class="mistakes-row">
+      <span>ошибки</span>
+      <div class="mistake-dot" id="m0"></div>
+      <div class="mistake-dot" id="m1"></div>
+      <div class="mistake-dot" id="m2"></div>
+    </div>
+  </div>
+</div>
+
+<div class="diff-wrap">
+  <button class="diff-btn" data-d="1" onclick="changeDiff(1)">① ДЕБЮТ</button>
+  <button class="diff-btn" data-d="2" onclick="changeDiff(2)">② ЛЁГКИЙ</button>
+  <button class="diff-btn active" data-d="3" onclick="changeDiff(3)">③ СРЕДНИЙ</button>
+  <button class="diff-btn" data-d="4" onclick="changeDiff(4)">④ СЛОЖНЫЙ</button>
+  <button class="diff-btn" data-d="5" onclick="changeDiff(5)">⑤ ЭКСПЕРТ</button>
+</div>
+
+<div class="deco-line"></div>
+
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="controls">
+  <div class="tools-row">
+    <button class="tool-btn erase-btn" onclick="setMode('erase')" id="btn-erase">
+      <span class="tool-icon">⌫</span>
+      <span>стереть</span>
+    </button>
+    <button class="tool-btn" onclick="setMode('note')" id="btn-note">
+      <span class="tool-icon">✏️</span>
+      <span>карандаш</span>
+    </button>
+    <button class="tool-btn" onclick="smartPencil()" id="btn-smart">
+      <span class="tool-icon">🧠</span>
+      <span>умный</span>
+    </button>
+  </div>
+
+  <div class="numpad" id="numpad"></div>
+
+  <div class="action-row">
+    <button class="action-btn" onclick="undoMove()">↩ отмена</button>
+    <button class="action-btn new-game" onclick="newGame()">✦ новая игра</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-title">完成</div>
+  <div class="overlay-sub">СУДОКУ РЕШЕНО</div>
+  <div class="overlay-time" id="overlay-time">00:00</div>
+  <button class="overlay-btn" onclick="newGame()">ИГРАТЬ СНОВА</button>
+</div>
+
+<script>
+// ===================== PUZZLE GENERATOR =====================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function generateSolved() {
+  const grid = Array.from({length: 9}, () => Array(9).fill(0));
+
+  function isValid(g, r, c, n) {
+    for (let i = 0; i < 9; i++) {
+      if (g[r][i] === n || g[i][c] === n) return false;
+    }
+    const br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        if (g[br+i][bc+j] === n) return false;
+    return true;
+  }
+
+  function solve(g) {
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (g[r][c] === 0) {
+          const nums = shuffle([1,2,3,4,5,6,7,8,9]);
+          for (const n of nums) {
+            if (isValid(g, r, c, n)) {
+              g[r][c] = n;
+              if (solve(g)) return true;
+              g[r][c] = 0;
+            }
+          }
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  solve(grid);
+  return grid;
+}
+
+// removals by difficulty
+const REMOVE_COUNT = { 1: 30, 2: 38, 3: 46, 4: 54, 5: 62 };
+
+function generatePuzzle(difficulty) {
+  const solved = generateSolved();
+  const puzzle = solved.map(r => [...r]);
+  const cells = shuffle([...Array(81).keys()]);
+  let removed = 0;
+  const target = REMOVE_COUNT[difficulty];
+
+  for (const idx of cells) {
+    if (removed >= target) break;
+    const r = Math.floor(idx / 9), c = idx % 9;
+    const backup = puzzle[r][c];
+    puzzle[r][c] = 0;
+    if (countSolutions(puzzle.map(x=>[...x])) === 1) {
+      removed++;
+    } else {
+      puzzle[r][c] = backup;
+    }
+  }
+  return { puzzle, solved };
+}
+
+function countSolutions(g, limit = 2) {
+  function isValid(r, c, n) {
+    for (let i = 0; i < 9; i++) {
+      if (g[r][i] === n || g[i][c] === n) return false;
+    }
+    const br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        if (g[br+i][bc+j] === n) return false;
+    return true;
+  }
+  let count = 0;
+  function solve() {
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (g[r][c] === 0) {
+          for (let n = 1; n <= 9; n++) {
+            if (isValid(r, c, n)) {
+              g[r][c] = n;
+              solve();
+              g[r][c] = 0;
+              if (count >= limit) return;
+            }
+          }
+          return;
+        }
+      }
+    }
+    count++;
+  }
+  solve();
+  return count;
+}
+
+// ===================== STATE =====================
+let state = {
+  puzzle: [],
+  solved: [],
+  board: [], // user values
+  notes: [], // 9x9 array of Set
+  given: [],
+  selected: null,
+  mode: 'normal', // normal | note | erase
+  mistakes: 0,
+  maxMistakes: 3,
+  history: [],
+  difficulty: 3,
+  timerInterval: null,
+  seconds: 0,
+  gameOver: false,
+  gameWon: false
+};
+
+// ===================== INIT =====================
+function newGame() {
+  clearInterval(state.timerInterval);
+  document.getElementById('overlay').classList.remove('visible');
+
+  const { puzzle, solved } = generatePuzzle(state.difficulty);
+
+  state.puzzle = puzzle;
+  state.solved = solved;
+  state.board = puzzle.map(r => [...r]);
+  state.notes = Array.from({length: 9}, () => Array.from({length: 9}, () => new Set()));
+  state.given = puzzle.map(r => r.map(v => v !== 0));
+  state.selected = null;
+  state.mode = 'normal';
+  state.mistakes = 0;
+  state.history = [];
+  state.seconds = 0;
+  state.gameOver = false;
+  state.gameWon = false;
+
+  updateMistakeDots();
+  renderBoard();
+  renderNumpad();
+  updateToolBtns();
+  startTimer();
+}
+
+function changeDiff(d) {
+  state.difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.d === d);
+  });
+  newGame();
+}
+
+// ===================== TIMER =====================
+function startTimer() {
+  clearInterval(state.timerInterval);
+  state.seconds = 0;
+  updateTimerDisplay();
+  state.timerInterval = setInterval(() => {
+    if (!state.gameOver && !state.gameWon) {
+      state.seconds++;
+      updateTimerDisplay();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = String(Math.floor(state.seconds / 60)).padStart(2, '0');
+  const s = String(state.seconds % 60).padStart(2, '0');
+  document.getElementById('timer').textContent = `${m}:${s}`;
+}
+
+function formatTime(sec) {
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(sec % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+// ===================== RENDER BOARD =====================
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+
+      const val = state.board[r][c];
+      const isGiven = state.given[r][c];
+
+      if (val !== 0) {
+        const span = document.createElement('span');
+        span.className = 'cell-value' + (isGiven ? '' : ' user');
+        span.textContent = val;
+        cell.appendChild(span);
+      } else {
+        // notes
+        const notesDiv = document.createElement('div');
+        notesDiv.className = 'notes-grid';
+        for (let n = 1; n <= 9; n++) {
+          const nd = document.createElement('div');
+          nd.className = 'note-num' + (state.notes[r][c].has(n) ? ' visible' : '');
+          nd.textContent = n;
+          nd.dataset.note = n;
+          notesDiv.appendChild(nd);
+        }
+        cell.appendChild(notesDiv);
+      }
+
+      // error highlight
+      if (!isGiven && val !== 0 && val !== state.solved[r][c]) {
+        cell.classList.add('error');
+      }
+
+      cell.addEventListener('click', () => selectCell(r, c));
+      board.appendChild(cell);
+    }
+  }
+
+  applyHighlights();
+}
+
+function applyHighlights() {
+  const cells = document.querySelectorAll('.cell');
+  cells.forEach(cell => {
+    cell.classList.remove('highlighted-row', 'highlighted-same', 'selected');
+  });
+
+  if (state.selected === null) return;
+
+  const [sr, sc] = state.selected;
+  const selVal = state.board[sr][sc];
+
+  cells.forEach(cell => {
+    const r = +cell.dataset.r;
+    const c = +cell.dataset.c;
+
+    const sameRow = r === sr;
+    const sameCol = c === sc;
+    const sameBox = Math.floor(r/3) === Math.floor(sr/3) && Math.floor(c/3) === Math.floor(sc/3);
+
+    if (r === sr && c === sc) {
+      cell.classList.add('selected');
+    } else if (sameRow || sameCol || sameBox) {
+      cell.classList.add('highlighted-row');
+    }
+
+    if (selVal !== 0 && state.board[r][c] === selVal) {
+      cell.classList.remove('highlighted-row');
+      cell.classList.add('highlighted-same');
+    }
+  });
+}
+
+function renderNumpad() {
+  const np = document.getElementById('numpad');
+  np.innerHTML = '';
+  // count used
+  const counts = Array(10).fill(0);
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (state.board[r][c] !== 0) counts[state.board[r][c]]++;
+
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn' + (counts[n] >= 9 ? ' depleted' : '');
+    btn.textContent = n;
+    btn.addEventListener('click', () => inputNumber(n));
+    np.appendChild(btn);
+  }
+}
+
+// ===================== INTERACTION =====================
+function selectCell(r, c) {
+  state.selected = [r, c];
+  applyHighlights();
+}
+
+function setMode(m) {
+  if (m === state.mode) {
+    state.mode = 'normal';
+  } else {
+    state.mode = m;
+  }
+  updateToolBtns();
+}
+
+function updateToolBtns() {
+  document.getElementById('btn-note').classList.toggle('active', state.mode === 'note');
+  document.getElementById('btn-erase').classList.toggle('active', state.mode === 'erase');
+  document.getElementById('btn-smart').classList.remove('smart-active');
+}
+
+function inputNumber(n) {
+  if (state.selected === null || state.gameOver || state.gameWon) return;
+  const [r, c] = state.selected;
+  if (state.given[r][c]) return;
+
+  if (state.mode === 'erase') {
+    pushHistory();
+    state.board[r][c] = 0;
+    state.notes[r][c].clear();
+    renderBoard();
+    renderNumpad();
+    return;
+  }
+
+  if (state.mode === 'note') {
+    pushHistory();
+    if (state.board[r][c] !== 0) return;
+    if (state.notes[r][c].has(n)) {
+      state.notes[r][c].delete(n);
+    } else {
+      state.notes[r][c].add(n);
+    }
+    renderBoard();
+    return;
+  }
+
+  // normal mode
+  pushHistory();
+  state.notes[r][c].clear();
+
+  if (state.board[r][c] === n) {
+    state.board[r][c] = 0;
+    renderBoard();
+    renderNumpad();
+    return;
+  }
+
+  state.board[r][c] = n;
+
+  if (n !== state.solved[r][c]) {
+    state.mistakes++;
+    updateMistakeDots();
+    if (state.mistakes >= state.maxMistakes) {
+      state.gameOver = true;
+      renderBoard();
+      renderNumpad();
+      clearInterval(state.timerInterval);
+      setTimeout(() => showGameOver(), 600);
+      return;
+    }
+  } else {
+    // remove this number from notes in same row/col/box
+    clearNotesFor(r, c, n);
+  }
+
+  renderBoard();
+  renderNumpad();
+  checkWin();
+}
+
+function clearNotesFor(r, c, n) {
+  const br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
+  for (let i = 0; i < 9; i++) {
+    state.notes[r][i].delete(n);
+    state.notes[i][c].delete(n);
+  }
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++)
+      state.notes[br+i][bc+j].delete(n);
+}
+
+function undoMove() {
+  if (state.history.length === 0) return;
+  const prev = state.history.pop();
+  state.board = prev.board;
+  state.notes = prev.notes;
+  renderBoard();
+  renderNumpad();
+}
+
+function pushHistory() {
+  state.history.push({
+    board: state.board.map(r => [...r]),
+    notes: state.notes.map(r => r.map(s => new Set(s)))
+  });
+  if (state.history.length > 50) state.history.shift();
+}
+
+// ===================== SMART PENCIL =====================
+function smartPencil() {
+  pushHistory();
+  // For each empty cell, calculate candidates
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (state.board[r][c] !== 0) continue;
+      state.notes[r][c] = new Set();
+      for (let n = 1; n <= 9; n++) {
+        if (isCandidate(r, c, n)) {
+          state.notes[r][c].add(n);
+        }
+      }
+    }
+  }
+  renderBoard();
+
+  // flash smart btn
+  const btn = document.getElementById('btn-smart');
+  btn.classList.add('smart-active');
+  setTimeout(() => btn.classList.remove('smart-active'), 1200);
+}
+
+function isCandidate(r, c, n) {
+  for (let i = 0; i < 9; i++) {
+    if (state.board[r][i] === n) return false;
+    if (state.board[i][c] === n) return false;
+  }
+  const br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++)
+      if (state.board[br+i][bc+j] === n) return false;
+  return true;
+}
+
+// ===================== WIN / LOSE =====================
+function checkWin() {
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (state.board[r][c] !== state.solved[r][c]) return;
+
+  state.gameWon = true;
+  clearInterval(state.timerInterval);
+  setTimeout(() => {
+    document.getElementById('overlay-time').textContent = formatTime(state.seconds);
+    document.getElementById('overlay').classList.add('visible');
+  }, 400);
+}
+
+function showGameOver() {
+  document.getElementById('overlay').querySelector('.overlay-title').textContent = '❌';
+  document.getElementById('overlay').querySelector('.overlay-sub').textContent = 'ТРИ ОШИБКИ — ИГРА ОКОНЧЕНА';
+  document.getElementById('overlay-time').textContent = formatTime(state.seconds);
+  document.getElementById('overlay').classList.add('visible');
+}
+
+function updateMistakeDots() {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById(`m${i}`).classList.toggle('active', i < state.mistakes);
+  }
+}
+
+// keyboard support
+document.addEventListener('keydown', e => {
+  if (state.gameOver || state.gameWon) return;
+  if (e.key >= '1' && e.key <= '9') {
+    inputNumber(+e.key);
+  } else if (e.key === 'Backspace' || e.key === 'Delete') {
+    if (state.selected) {
+      const [r,c] = state.selected;
+      if (!state.given[r][c]) {
+        pushHistory();
+        state.board[r][c] = 0;
+        state.notes[r][c].clear();
+        renderBoard();
+        renderNumpad();
+      }
+    }
+  } else if (e.key === 'ArrowUp' && state.selected) {
+    state.selected[0] = Math.max(0, state.selected[0]-1);
+    applyHighlights();
+  } else if (e.key === 'ArrowDown' && state.selected) {
+    state.selected[0] = Math.min(8, state.selected[0]+1);
+    applyHighlights();
+  } else if (e.key === 'ArrowLeft' && state.selected) {
+    state.selected[1] = Math.max(0, state.selected[1]-1);
+    applyHighlights();
+  } else if (e.key === 'ArrowRight' && state.selected) {
+    state.selected[1] = Math.min(8, state.selected[1]+1);
+    applyHighlights();
+  }
+});
+
+// ===================== THEME =====================
+let isLight = false;
+
+function toggleTheme() {
+  isLight = !isLight;
+  document.documentElement.classList.toggle("light", isLight);
+  const toggle = document.getElementById("themeToggle");
+  const thumb = document.getElementById("themeThumb");
+  toggle.classList.toggle("light-mode", isLight);
+  thumb.textContent = isLight ? "☀️" : "🌙";
+}
+
+// start!
+newGame();
+</script>
+</body>
+</html>
