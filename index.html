@@ -243,7 +243,18 @@
   .cell.highlighted-row { background: var(--highlight-row); }
   .cell.highlighted-same { background: var(--highlight-same); }
   .cell.selected { background: var(--highlight-cell) !important; }
-  .cell.error .cell-value { color: var(--error) !important; }
+  .cell.error { background: rgba(220, 60, 60, 0.22) !important; }
+  .cell.error .cell-value { color: #ff4d4d !important; text-shadow: 0 0 8px rgba(255,77,77,0.5); }
+  :root.light .cell.error { background: rgba(200, 40, 40, 0.15) !important; }
+  :root.light .cell.error .cell-value { color: #cc2020 !important; text-shadow: none; }
+  .cell.error::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(255, 77, 77, 0.6);
+    pointer-events: none;
+  }
+  :root.light .cell.error::after { border-color: rgba(180, 30, 30, 0.5); }
 
   .cell-value {
     font-size: clamp(14px, 4.2vw, 22px);
@@ -280,6 +291,13 @@
   }
 
   .note-num.visible { opacity: 1; }
+  .note-num.note-highlight { 
+    opacity: 1 !important;
+    color: var(--accent) !important;
+    font-weight: 500;
+  }
+  .cell.highlighted-note { background: rgba(126, 184, 201, 0.12); }
+  :root.light .cell.highlighted-note { background: rgba(58, 122, 146, 0.1); }
 
   /* CONTROLS */
   .controls {
@@ -742,7 +760,8 @@ function renderBoard() {
 function applyHighlights() {
   const cells = document.querySelectorAll('.cell');
   cells.forEach(cell => {
-    cell.classList.remove('highlighted-row', 'highlighted-same', 'selected');
+    cell.classList.remove('highlighted-row', 'highlighted-same', 'selected', 'highlighted-note');
+    cell.querySelectorAll('.note-num').forEach(n => n.classList.remove('note-highlight'));
   });
 
   if (state.selected === null) return;
@@ -764,9 +783,19 @@ function applyHighlights() {
       cell.classList.add('highlighted-row');
     }
 
+    // highlight cells with same number
     if (selVal !== 0 && state.board[r][c] === selVal) {
       cell.classList.remove('highlighted-row');
       cell.classList.add('highlighted-same');
+    }
+
+    // highlight cells that have selVal as a pencil note
+    if (selVal !== 0 && state.board[r][c] === 0 && state.notes[r][c].has(selVal)) {
+      cell.classList.remove('highlighted-row');
+      cell.classList.add('highlighted-note');
+      // highlight the specific note number
+      const noteEl = cell.querySelector(`.note-num[data-note="${selVal}"]`);
+      if (noteEl) noteEl.classList.add('note-highlight');
     }
   });
 }
