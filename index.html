@@ -220,6 +220,7 @@
     width: min(100%, 420px);
     aspect-ratio: 1;
     position: relative;
+    transition: opacity 0.2s;
   }
 
   .cell {
@@ -480,11 +481,11 @@
 </div>
 
 <div class="diff-wrap">
-  <button class="diff-btn" data-d="1" onclick="changeDiff(1)">① ДЕБЮТ</button>
-  <button class="diff-btn" data-d="2" onclick="changeDiff(2)">② ЛЁГКИЙ</button>
-  <button class="diff-btn active" data-d="3" onclick="changeDiff(3)">③ СРЕДНИЙ</button>
-  <button class="diff-btn" data-d="4" onclick="changeDiff(4)">④ СЛОЖНЫЙ</button>
-  <button class="diff-btn" data-d="5" onclick="changeDiff(5)">⑤ ЭКСПЕРТ</button>
+  <button class="diff-btn active" data-d="3" onclick="changeDiff(3)">① СРЕДНИЙ</button>
+  <button class="diff-btn" data-d="4" onclick="changeDiff(4)">② СЛОЖНЫЙ</button>
+  <button class="diff-btn" data-d="5" onclick="changeDiff(5)">③ ЭКСПЕРТ</button>
+  <button class="diff-btn" data-d="6" onclick="changeDiff(6)">④ БЕЗУМНЫЙ</button>
+  <button class="diff-btn" data-d="7" onclick="changeDiff(7)">⑤ АБСОЛЮТ</button>
 </div>
 
 <div class="deco-line"></div>
@@ -571,26 +572,48 @@ function generateSolved() {
   return grid;
 }
 
-// removals by difficulty
-const REMOVE_COUNT = { 1: 30, 2: 38, 3: 46, 4: 54, 5: 62 };
+// removals by difficulty — levels 6 and 7 target 18 and 17 clues (63 and 64 removed)
+const REMOVE_COUNT = { 3: 46, 4: 54, 5: 62, 6: 63, 7: 64 };
 
 function generatePuzzle(difficulty) {
+  const target = REMOVE_COUNT[difficulty] || 46;
+  // For hardest levels we may need multiple attempts to hit exact target
+  const maxAttempts = difficulty >= 6 ? 40 : 1;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const solved = generateSolved();
+    const puzzle = solved.map(r => [...r]);
+    const cells = shuffle([...Array(81).keys()]);
+    let removed = 0;
+
+    for (const idx of cells) {
+      if (removed >= target) break;
+      const r = Math.floor(idx / 9), c = idx % 9;
+      const backup = puzzle[r][c];
+      puzzle[r][c] = 0;
+      if (countSolutions(puzzle.map(x=>[...x])) === 1) {
+        removed++;
+      } else {
+        puzzle[r][c] = backup;
+      }
+    }
+    // For levels 6/7, only accept if we hit the exact target
+    if (difficulty < 6 || removed >= target) {
+      return { puzzle, solved };
+    }
+  }
+  // Fallback: return best effort from last attempt
   const solved = generateSolved();
   const puzzle = solved.map(r => [...r]);
   const cells = shuffle([...Array(81).keys()]);
   let removed = 0;
-  const target = REMOVE_COUNT[difficulty];
-
   for (const idx of cells) {
-    if (removed >= target) break;
+    if (removed >= target - 1) break; // accept one less on fallback
     const r = Math.floor(idx / 9), c = idx % 9;
     const backup = puzzle[r][c];
     puzzle[r][c] = 0;
-    if (countSolutions(puzzle.map(x=>[...x])) === 1) {
-      removed++;
-    } else {
-      puzzle[r][c] = backup;
-    }
+    if (countSolutions(puzzle.map(x=>[...x])) === 1) removed++;
+    else puzzle[r][c] = backup;
   }
   return { puzzle, solved };
 }
@@ -653,6 +676,25 @@ function newGame() {
   clearInterval(state.timerInterval);
   document.getElementById('overlay').classList.remove('visible');
 
+  const diff = state.difficulty;
+  if (diff >= 6) {
+    showLoading(true);
+    setTimeout(() => {
+      _startGame();
+      showLoading(false);
+    }, 30);
+  } else {
+    _startGame();
+  }
+}
+
+function showLoading(on) {
+  document.getElementById('board').style.opacity = on ? '0.3' : '1';
+  const btn = document.querySelector('.action-btn.new-game');
+  if (btn) btn.textContent = on ? '⏳ генерация...' : '✦ новая игра';
+}
+
+function _startGame() {
   const { puzzle, solved } = generatePuzzle(state.difficulty);
 
   state.puzzle = puzzle;
