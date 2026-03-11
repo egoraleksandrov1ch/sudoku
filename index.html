@@ -508,6 +508,10 @@
       <span class="tool-icon">🧠</span>
       <span>умный</span>
     </button>
+    <button class="tool-btn active" onclick="toggleHighlight()" id="btn-highlight">
+      <span class="tool-icon">👁</span>
+      <span>подсветка</span>
+    </button>
   </div>
 
   <div class="numpad" id="numpad"></div>
@@ -668,7 +672,8 @@ let state = {
   timerInterval: null,
   seconds: 0,
   gameOver: false,
-  gameWon: false
+  gameWon: false,
+  highlightEnabled: true
 };
 
 // ===================== INIT =====================
@@ -799,6 +804,13 @@ function renderBoard() {
   applyHighlights();
 }
 
+function toggleHighlight() {
+  state.highlightEnabled = !state.highlightEnabled;
+  const btn = document.getElementById('btn-highlight');
+  btn.classList.toggle('active', state.highlightEnabled);
+  applyHighlights();
+}
+
 function applyHighlights() {
   const cells = document.querySelectorAll('.cell');
   cells.forEach(cell => {
@@ -821,9 +833,11 @@ function applyHighlights() {
 
     if (r === sr && c === sc) {
       cell.classList.add('selected');
-    } else if (sameRow || sameCol || sameBox) {
+    } else if (state.highlightEnabled && (sameRow || sameCol || sameBox)) {
       cell.classList.add('highlighted-row');
     }
+
+    if (!state.highlightEnabled) return;
 
     // highlight cells with same number
     if (selVal !== 0 && state.board[r][c] === selVal) {
@@ -835,7 +849,6 @@ function applyHighlights() {
     if (selVal !== 0 && state.board[r][c] === 0 && state.notes[r][c].has(selVal)) {
       cell.classList.remove('highlighted-row');
       cell.classList.add('highlighted-note');
-      // highlight the specific note number
       const noteEl = cell.querySelector(`.note-num[data-note="${selVal}"]`);
       if (noteEl) noteEl.classList.add('note-highlight');
     }
