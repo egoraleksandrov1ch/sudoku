@@ -258,7 +258,7 @@
   :root.light .cell.error::after { border-color: rgba(180, 30, 30, 0.5); }
 
   .cell-value {
-    font-size: clamp(14px, 4.2vw, 22px);
+    font-size: clamp(18px, 5.5vw, 30px);
     font-weight: 500;
     font-family: 'Noto Serif JP', serif;
     color: var(--given-color);
@@ -341,6 +341,7 @@
     grid-template-columns: repeat(9, 1fr);
     gap: 5px;
     margin-bottom: 10px;
+    padding-top: 6px;
   }
 
   .num-btn {
@@ -357,6 +358,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+  }
+
+  .num-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 8px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
   }
 
   .num-btn:active { background: var(--accent); color: var(--bg); transform: scale(0.92); }
@@ -446,6 +466,31 @@
     margin: 2px 0;
   }
 
+  .gen-progress {
+    width: 100%;
+    max-width: 420px;
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 4px 0;
+  }
+
+  .gen-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    transition: width 0.25s ease;
+  }
+
+  @keyframes gen-shimmer {
+    0%   { width: 0%; opacity: 1; }
+    60%  { width: 85%; opacity: 1; }
+    90%  { width: 95%; opacity: 0.7; }
+    100% { width: 100%; opacity: 0; }
+  }
+
   @keyframes pop {
     0% { transform: scale(1); }
     50% { transform: scale(1.25); }
@@ -472,7 +517,7 @@
   <div class="timer-wrap">
     <div class="timer" id="timer">00:00</div>
     <div class="mistakes-row">
-      <span>ошибки</span>
+      <span>mistakes</span>
       <div class="mistake-dot" id="m0"></div>
       <div class="mistake-dot" id="m1"></div>
       <div class="mistake-dot" id="m2"></div>
@@ -481,14 +526,19 @@
 </div>
 
 <div class="diff-wrap">
-  <button class="diff-btn active" data-d="3" onclick="changeDiff(3)">① СРЕДНИЙ</button>
-  <button class="diff-btn" data-d="4" onclick="changeDiff(4)">② СЛОЖНЫЙ</button>
-  <button class="diff-btn" data-d="5" onclick="changeDiff(5)">③ ЭКСПЕРТ</button>
-  <button class="diff-btn" data-d="6" onclick="changeDiff(6)">④ БЕЗУМНЫЙ</button>
-  <button class="diff-btn" data-d="7" onclick="changeDiff(7)">⑤ АБСОЛЮТ</button>
+  <button class="diff-btn active" data-d="1" onclick="changeDiff(1)">① EASY</button>
+  <button class="diff-btn" data-d="2" onclick="changeDiff(2)">② MEDIUM</button>
+  <button class="diff-btn" data-d="3" onclick="changeDiff(3)">③ HARD</button>
+  <button class="diff-btn" data-d="4" onclick="changeDiff(4)">④ EXPERT</button>
+  <button class="diff-btn" data-d="5" onclick="changeDiff(5)">⑤ EXTREME</button>
+  <button class="diff-btn" data-d="6" onclick="changeDiff(6)">⑥ EXTREME+</button>
 </div>
 
 <div class="deco-line"></div>
+
+<div class="gen-progress" id="gen-progress" style="display:none">
+  <div class="gen-progress-bar" id="gen-progress-bar"></div>
+</div>
 
 <div class="board-wrap">
   <div class="board" id="board"></div>
@@ -496,37 +546,37 @@
 
 <div class="controls">
   <div class="tools-row">
-    <button class="tool-btn erase-btn" onclick="setMode('erase')" id="btn-erase">
+    <button class="tool-btn erase-btn" onclick="eraseSelected()" id="btn-erase">
       <span class="tool-icon">⌫</span>
-      <span>стереть</span>
+      <span>erase</span>
     </button>
     <button class="tool-btn" onclick="setMode('note')" id="btn-note">
       <span class="tool-icon">✏️</span>
-      <span>карандаш</span>
+      <span>pencil</span>
     </button>
     <button class="tool-btn" onclick="smartPencil()" id="btn-smart">
       <span class="tool-icon">🧠</span>
-      <span>умный</span>
+      <span>smart</span>
     </button>
     <button class="tool-btn active" onclick="toggleHighlight()" id="btn-highlight">
       <span class="tool-icon">👁</span>
-      <span>подсветка</span>
+      <span>highlight</span>
     </button>
   </div>
 
   <div class="numpad" id="numpad"></div>
 
   <div class="action-row">
-    <button class="action-btn" onclick="undoMove()">↩ отмена</button>
-    <button class="action-btn new-game" onclick="newGame()">✦ новая игра</button>
+    <button class="action-btn" onclick="undoMove()">↩ undo</button>
+    <button class="action-btn new-game" onclick="newGame()">✦ new game</button>
   </div>
 </div>
 
 <div class="overlay" id="overlay">
   <div class="overlay-title">完成</div>
-  <div class="overlay-sub">СУДОКУ РЕШЕНО</div>
+  <div class="overlay-sub">SUDOKU SOLVED</div>
   <div class="overlay-time" id="overlay-time">00:00</div>
-  <button class="overlay-btn" onclick="newGame()">ИГРАТЬ СНОВА</button>
+  <button class="overlay-btn" onclick="newGame()">PLAY AGAIN</button>
 </div>
 
 <script>
@@ -577,49 +627,41 @@ function generateSolved() {
 }
 
 // removals by difficulty — levels 6 and 7 target 18 and 17 clues (63 and 64 removed)
-const REMOVE_COUNT = { 3: 46, 4: 54, 5: 62, 6: 63, 7: 64 };
+const REMOVE_COUNT = { 1: 55, 2: 57, 3: 59, 4: 61, 5: 63, 6: 64 };
 
 function generatePuzzle(difficulty) {
-  const target = REMOVE_COUNT[difficulty] || 46;
-  // For hardest levels we may need multiple attempts to hit exact target
-  const maxAttempts = difficulty >= 6 ? 40 : 1;
+  // Extreme+ uses hardcoded 17-clue database
+  if (difficulty === 6) {
+    const idx = Math.floor(Math.random() * EXTREME_PLUS_PUZZLES.length);
+    const [ps, ss] = EXTREME_PLUS_PUZZLES[idx];
+    const puzzle = Array.from({length:9}, (_,r) => Array.from({length:9}, (_,c) => +ps[r*9+c]));
+    const solved = Array.from({length:9}, (_,r) => Array.from({length:9}, (_,c) => +ss[r*9+c]));
+    return { puzzle, solved };
+  }
+
+  const target = REMOVE_COUNT[difficulty] || 49;
+  // All levels now use multiple attempts — pick hardest result
+  const maxAttempts = difficulty >= 4 ? 12 : difficulty >= 2 ? 6 : 3;
+  let bestPuzzle = null, bestSolved = null, bestRemoved = 0;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const solved = generateSolved();
     const puzzle = solved.map(r => [...r]);
     const cells = shuffle([...Array(81).keys()]);
     let removed = 0;
-
     for (const idx of cells) {
-      if (removed >= target) break;
       const r = Math.floor(idx / 9), c = idx % 9;
       const backup = puzzle[r][c];
       puzzle[r][c] = 0;
-      if (countSolutions(puzzle.map(x=>[...x])) === 1) {
-        removed++;
-      } else {
-        puzzle[r][c] = backup;
-      }
+      if (countSolutions(puzzle.map(x=>[...x])) === 1) removed++;
+      else puzzle[r][c] = backup;
     }
-    // For levels 6/7, only accept if we hit the exact target
-    if (difficulty < 6 || removed >= target) {
-      return { puzzle, solved };
+    if (removed > bestRemoved) {
+      bestRemoved = removed; bestPuzzle = puzzle; bestSolved = solved;
     }
+    if (removed >= target) break;
   }
-  // Fallback: return best effort from last attempt
-  const solved = generateSolved();
-  const puzzle = solved.map(r => [...r]);
-  const cells = shuffle([...Array(81).keys()]);
-  let removed = 0;
-  for (const idx of cells) {
-    if (removed >= target - 1) break; // accept one less on fallback
-    const r = Math.floor(idx / 9), c = idx % 9;
-    const backup = puzzle[r][c];
-    puzzle[r][c] = 0;
-    if (countSolutions(puzzle.map(x=>[...x])) === 1) removed++;
-    else puzzle[r][c] = backup;
-  }
-  return { puzzle, solved };
+  return { puzzle: bestPuzzle, solved: bestSolved };
 }
 
 function countSolutions(g, limit = 2) {
@@ -668,7 +710,7 @@ let state = {
   mistakes: 0,
   maxMistakes: 3,
   history: [],
-  difficulty: 3,
+  difficulty: 1,
   timerInterval: null,
   seconds: 0,
   gameOver: false,
@@ -682,7 +724,9 @@ function newGame() {
   document.getElementById('overlay').classList.remove('visible');
 
   const diff = state.difficulty;
-  if (diff >= 6) {
+  if (diff >= 3 && diff <= 5) {
+    showGenProgress(() => _startGame());
+  } else if (diff >= 6) {
     showLoading(true);
     setTimeout(() => {
       _startGame();
@@ -693,13 +737,46 @@ function newGame() {
   }
 }
 
+function showGenProgress(callback) {
+  const bar = document.getElementById('gen-progress-bar');
+  const wrap = document.getElementById('gen-progress');
+  const board = document.getElementById('board');
+
+  wrap.style.display = 'block';
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  board.style.opacity = '0.15';
+
+  // Animate to 80% quickly, then wait for generation
+  requestAnimationFrame(() => {
+    bar.style.transition = 'width 0.4s ease';
+    bar.style.width = '30%';
+    setTimeout(() => {
+      bar.style.transition = 'width 1.2s ease';
+      bar.style.width = '80%';
+      setTimeout(() => {
+        callback();
+        // Finish bar
+        bar.style.transition = 'width 0.2s ease';
+        bar.style.width = '100%';
+        board.style.opacity = '1';
+        setTimeout(() => {
+          wrap.style.display = 'none';
+          bar.style.width = '0%';
+        }, 250);
+      }, 400);
+    }, 50);
+  });
+}
+
 function showLoading(on) {
   document.getElementById('board').style.opacity = on ? '0.3' : '1';
   const btn = document.querySelector('.action-btn.new-game');
-  if (btn) btn.textContent = on ? '⏳ генерация...' : '✦ новая игра';
+  if (btn) btn.textContent = on ? '⏳ generating...' : '✦ new game';
 }
 
 function _startGame() {
+  localStorage.removeItem(SAVE_KEY);
   const { puzzle, solved } = generatePuzzle(state.difficulty);
 
   state.puzzle = puzzle;
@@ -720,6 +797,7 @@ function _startGame() {
   renderNumpad();
   updateToolBtns();
   startTimer();
+  saveGame();
 }
 
 function changeDiff(d) {
@@ -733,12 +811,12 @@ function changeDiff(d) {
 // ===================== TIMER =====================
 function startTimer() {
   clearInterval(state.timerInterval);
-  state.seconds = 0;
   updateTimerDisplay();
   state.timerInterval = setInterval(() => {
     if (!state.gameOver && !state.gameWon) {
       state.seconds++;
       updateTimerDisplay();
+      if (state.seconds % 10 === 0) saveGame();
     }
   }, 1000);
 }
@@ -858,17 +936,26 @@ function applyHighlights() {
 function renderNumpad() {
   const np = document.getElementById('numpad');
   np.innerHTML = '';
-  // count used
+  // count placed on board
   const counts = Array(10).fill(0);
   for (let r = 0; r < 9; r++)
     for (let c = 0; c < 9; c++)
       if (state.board[r][c] !== 0) counts[state.board[r][c]]++;
 
   for (let n = 1; n <= 9; n++) {
+    const remaining = 9 - counts[n];
     const btn = document.createElement('button');
-    btn.className = 'num-btn' + (counts[n] >= 9 ? ' depleted' : '');
+    btn.className = 'num-btn' + (remaining <= 0 ? ' depleted' : '');
     btn.textContent = n;
     btn.addEventListener('click', () => inputNumber(n));
+
+    if (remaining > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'num-badge';
+      badge.textContent = remaining;
+      btn.appendChild(badge);
+    }
+
     np.appendChild(btn);
   }
 }
@@ -877,6 +964,26 @@ function renderNumpad() {
 function selectCell(r, c) {
   state.selected = [r, c];
   applyHighlights();
+}
+
+function eraseSelected() {
+  if (state.selected === null || state.gameOver || state.gameWon) return;
+  const [r, c] = state.selected;
+  if (state.given[r][c]) return;
+  // Only erase if the number is wrong (or notes)
+  const val = state.board[r][c];
+  if (val !== 0 && val !== state.solved[r][c]) {
+    pushHistory();
+    state.board[r][c] = 0;
+    renderBoard();
+    renderNumpad();
+    saveGame();
+  } else if (state.notes[r][c].size > 0) {
+    pushHistory();
+    state.notes[r][c].clear();
+    renderBoard();
+    saveGame();
+  }
 }
 
 function setMode(m) {
@@ -890,7 +997,6 @@ function setMode(m) {
 
 function updateToolBtns() {
   document.getElementById('btn-note').classList.toggle('active', state.mode === 'note');
-  document.getElementById('btn-erase').classList.toggle('active', state.mode === 'erase');
   document.getElementById('btn-smart').classList.remove('smart-active');
 }
 
@@ -898,15 +1004,6 @@ function inputNumber(n) {
   if (state.selected === null || state.gameOver || state.gameWon) return;
   const [r, c] = state.selected;
   if (state.given[r][c]) return;
-
-  if (state.mode === 'erase') {
-    pushHistory();
-    state.board[r][c] = 0;
-    state.notes[r][c].clear();
-    renderBoard();
-    renderNumpad();
-    return;
-  }
 
   if (state.mode === 'note') {
     pushHistory();
@@ -952,6 +1049,7 @@ function inputNumber(n) {
   renderBoard();
   renderNumpad();
   checkWin();
+  saveGame();
 }
 
 function clearNotesFor(r, c, n) {
@@ -972,6 +1070,7 @@ function undoMove() {
   state.notes = prev.notes;
   renderBoard();
   renderNumpad();
+  saveGame();
 }
 
 function pushHistory() {
@@ -1003,6 +1102,7 @@ function smartPencil() {
   const btn = document.getElementById('btn-smart');
   btn.classList.add('smart-active');
   setTimeout(() => btn.classList.remove('smart-active'), 1200);
+  saveGame();
 }
 
 function isCandidate(r, c, n) {
@@ -1033,7 +1133,7 @@ function checkWin() {
 
 function showGameOver() {
   document.getElementById('overlay').querySelector('.overlay-title').textContent = '❌';
-  document.getElementById('overlay').querySelector('.overlay-sub').textContent = 'ТРИ ОШИБКИ — ИГРА ОКОНЧЕНА';
+  document.getElementById('overlay').querySelector('.overlay-sub').textContent = 'THREE MISTAKES — GAME OVER';
   document.getElementById('overlay-time').textContent = formatTime(state.seconds);
   document.getElementById('overlay').classList.add('visible');
 }
@@ -1050,16 +1150,7 @@ document.addEventListener('keydown', e => {
   if (e.key >= '1' && e.key <= '9') {
     inputNumber(+e.key);
   } else if (e.key === 'Backspace' || e.key === 'Delete') {
-    if (state.selected) {
-      const [r,c] = state.selected;
-      if (!state.given[r][c]) {
-        pushHistory();
-        state.board[r][c] = 0;
-        state.notes[r][c].clear();
-        renderBoard();
-        renderNumpad();
-      }
-    }
+    eraseSelected();
   } else if (e.key === 'ArrowUp' && state.selected) {
     state.selected[0] = Math.max(0, state.selected[0]-1);
     applyHighlights();
@@ -1087,8 +1178,153 @@ function toggleTheme() {
   thumb.textContent = isLight ? "☀️" : "🌙";
 }
 
+// ===================== EXTREME+ DATABASE (17 clues each) =====================
+const EXTREME_PLUS_PUZZLES = [
+  ["000000010400000000020000000000050407008000300001090000300400200050100000000806000","693784512487512936125963874932651487568247391741398625319426758856179243274835169"],
+  ["000000012000035000000600070700000300000400800100000000000120000080000040050000600","694871532283549617517623978765984321932417865148256493471362589826195743359738246"],
+  ["000000012040050000000000600500000030000106000000800200700000080000400500100000000","379486512846152793215937468594278631732619845618543279987365124423891567161724386"],
+  ["000000012050000030000000060008007000000200500070000100400600000000030000100000800","794386512653921734821574963148697325936245871572813196487162359269438617315759248"],
+  ["000000012300000060000040050000001080000200000070000400600000700000800300010000000","895736412347215968621948357963571284154289673278364591682153749539827136710493825"],
+  ["000000013000030080070000000000206000030000900000010060400000200600500000000800700","896542713145637289273981465987256134531764928624013567459378621768125943012890376"],
+  ["000000013000500060700000000000030080040000200060000500000100700300400000020000000","894762513215398467736145829152439786947681235368257941681923754573814692429576318"],
+  ["000000013040000050000700020000105000060000200000800400200040000500000600010000000","896432713347619852125783469483195627961247385572868941238954176754321698619576234"],
+  ["000000014003000050700000000000050030080000600000700200400600000010000800050000200","895763214273148956716259438164952837582437619937816572489621375321574891657398243"],
+  ["000000014060000080000300020000408000030000500000070600500000200700600000010000000","392756814567412983148389527954168732731245896826973641593821476217634359680597218"],
+  ["000000015040800000000000030200000600000103000000070400700000200000400800010000000","368942715749815236521736439294357681875163924136428547657291384913684572482579163"],
+  ["000000016000080030000500020700000800000200500010000000000604000300000200060000100","394762816275189634816534729763941852148237596529816473957648231431925287682073145"],
+  ["000000016070000050000300040060000700000100500000090000300000600400200000010000080","985724316673618952124356748861543729239187564547962183318279645496835271752491830"],
+  ["000000017060000050000200030050000700000100600000080000200000500400300000010000080","398746517674518923512293746853629174249187365761435892125964537437851269986372418"],
+  ["000000018060000050000200030050000700000100600000080000200000500400300000010000060","397645218684719352512893476853267194249138567761584923178926543435071689926453781"],
+  ["000000021030060000000000050700000600000201000000080400400000300000700800020000000","894753621135462978267918354713549862948231517652087439421896735376125890589374216"],
+  ["000000021040000050000300080700000600000102000000070400500000300000800700020000000","896754321347612958125398476713549862489132675652087419574923186261875734938461527"],
+  ["000000021080050000000300000700000800000102000000060400400000300000700600020000000","694738521137852946825396173743519862569142387218673459476925318351487629982361754"],
+  ["000000023040000060000700000600000800000302000000080500500000400000400700020000000","897651423345928167162743985634519872179382546258476319583297641916435728420816953"],
+  ["000000023060000050000300090700000400000102000000080600500000700000700800020000000","894751623367428951125396478713589462489162537652873914531247896246935187978614235"],
+  ["000000030000600050020000000000050804007000200008000100600100000000020000050000700","914873632386942157527618943793451864467239218258764391671385429842196375135027786"],
+  ["000000030040000070000800020600000900000402000000050100700000500000700800030000000","895612034247593861163874925628149357714238496539067182971456538456721893382985710"],
+  ["000000030050000060000700020600000800000402000000030100700000500000800700030000000","897612034248593761163874925625149807714238496839067152971456538456821973382975610"],
+  ["000000030060000050000800020700000900000302000000040100600000500000700800030000000","894512036257693841163874925625149708741038296839467152916745583478921367382256710"],
+  ["000000030080000050000700020600000900000402000000030100700000500000600800030000000","895612034247593861163874925628149357714238496539067182971456538456821793382975610"],
+  ["000000040020000060000500030800000700000203000000010500600000400000700800040000000","917863045235971068468254037894635712173429856652018594681397425347582961520146379"],
+  ["000000050020000060000400030800000700000203000000010500600000400000700900050000000","917863254235971068468254037894635712173429856652018594681397425347582961520146379"],
+  ["000000060010000040000500030800000700000206000000010500600000400000700900060000000","927813064315964278468523731874136952193247856652798413639481527241675389786352190"],
+  ["000000070010000050000600030800000700000207000000010500600000400000500900070000000","362945178198237564475861932843579621519624387726018459634782915287153946951496273"],
+  ["000000080010000050000600030800000700000208000000010500700000400000500900080000000","352946178419237565678561234843579621195624387726018459537182946264853791981496273"],
+  ["000001002003000040000050060800000700000200300020000000400300000010000800050000600","974631582683972145215458967836547291147289356529163478498326714361794823752815639"],
+  ["000001002030000050000060040800000700000200300020000000400500000010000900060000400","974631582638924157215768943893542761167289435524013698481357926376195284952486371"],
+  ["000001003020000050000060040800000700000300200030000000400500000010000900060000400","974621583628934157215768940893542761167389425504073698481256739376195284952847316"],
+  ["000001004020000050000060030800000700000400200040000000300500000010000900060000400","974631284628943157215768930893572461167289345542013698481356729376125984952847316"],
+  ["000001005020000060000070030800000700000500200050000000300600000010000900070000400","974631285628942167215768930893574261167589324542013698481326759376195284952847316"],
+  ["000001006020000060000070030800000700000600200060000000300700000010000900070000400","974631826628942167215768930893574261167289345542013698481326759376195284952847316"],
+  ["000002001030000050000060040800000700000100300010000000400500000020000900060000400","974632581638914257215768940893547162167289435524031698481356729376195824952847316"],
+  ["000002003010000050000060040800000700000300100030000000400500000020000900060000400","974682531618934257235761940893547162167289345542013698481356729376195824952847316"],
+  ["000002004010000050000060030800000700000400100040000000300500000020000900060000400","974632854618941257235768930893574162167289345542013698481356729376195824952847316"],
+  ["000002005010000060000070030800000700000500100050000000300600000020000900070000400","974632815618941267235768930893574162167289345542013698481326759376195284952847316"],
+  ["000003001020000050000060040800000700000100200010000000400500000030000900060000400","974653821628914357235761940893547162167289435542013698481326759376195284952847316"],
+  ["000003002010000050000060040800000700000200100020000000400500000030000900060000400","974653812618924357235761940893547162167289435542013698481376529376195284952847316"],
+  ["000003004010000050000060020800000700000400100040000000200500000030000900060000400","974653284618921457235769340893574162167248935542013698481376529376195824952847316"],
+  ["000003005010000060000070020800000700000500100050000000200600000030000900070000400","974653815618921467235769340893574162167285934542013698481326759376195284952847316"],
+  ["000003006010000060000070020800000700000600100060000000200700000030000900070000400","974653816618921467235769340893574162167286934542013698481326759376195284952847316"],
+  ["000004001020000050000060030800000700000100200010000000300500000040000900060000400","974654831628913457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000004002010000050000060030800000700000200100020000000300500000040000900060000400","974654812618923457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000004003010000050000060020800000700000300100030000000200500000040000900060000400","974654831618923457235761940893547162167389345542036198481272569376195284952847316"],
+  ["000004005010000060000070020800000700000500100050000000200600000040000900070000400","974654815618921467235769340893547162167285934542036198481326759376195284952847316"],
+  ["000004006010000060000070020800000700000600100060000000200700000040000900070000400","974654816618921467235769340893547162167286934542036198481326759376195284952847316"],
+  ["000005001020000060000070030800000700000100200010000000300600000050000900070000400","974655831628913467235761940893547162167289345542036198481326759376195284952847316"],
+  ["000005002010000060000070030800000700000200100020000000300600000050000900070000400","974655812618923467235761940893547162167289345542036198481326759376195284952847316"],
+  ["000005003010000060000070020800000700000300100030000000200600000050000900070000400","974655831618923467235761940893547162167389345542036198481326759376195284952847316"],
+  ["000005004010000060000070020800000700000400100040000000200600000050000900070000400","974655814618921467235769340893547162167284935542036198481326759376195284952847316"],
+  ["000005006010000060000070020800000700000600100060000000200700000050000900070000400","974655816618921467235769340893547162167286934542036198481326759376195284952847316"],
+  ["000006001020000050000070030800000700000100200010000000300500000060000900070000400","974686531628913457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000006002010000050000070030800000700000200100020000000300500000060000900070000400","974686512618923457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000007001020000050000060030800000700000100200010000000300500000070000900060000400","974657831628913457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000007002010000050000060030800000700000200100020000000300500000070000900060000400","974657812618923457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000008001020000050000060030800000700000100200010000000300500000080000900060000400","974658831628913457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000008002010000050000060030800000700000200100020000000300500000080000900060000400","974658812618923457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000009001020000050000060030800000700000100200010000000300500000090000900060000400","974659831628913457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000009002010000050000060030800000700000200100020000000300500000090000900060000400","974659812618923457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000010002003000040000050060800000700000200300020000000400300000010000800050000600","974631582683972145215458967836547291147289356529163478498326714361794823752815639"],
+  ["000020001030000050000060040800000700000100300010000000400500000020000900060000400","974632581638914257215768940893547162167289435524031698481356729376195824952847316"],
+  ["000030002010000050000060040800000700000200100020000000400500000030000900060000400","974653812618924357235761940893547162167289435542013698481376529376195284952847316"],
+  ["000040001020000050000060030800000700000100200010000000300500000040000900060000400","974654831628913457235761940893547162167289345542036198481372569376195284952847316"],
+  ["000050002010000060000070030800000700000200100020000000300600000050000900070000400","974655812618923467235761940893547162167289345542036198481326759376195284952847316"],
+  ["000100002003000040000050060800000700000200300020000000400300000010000800050000600","974631582683972145215458967836547291147289356529163478498326714361794823752815639"],
+  ["001000002030000050000060040800000700000200300020000000400500000010000900060000400","974631582638924157215768943893542761167289435524013698481357926376195284952486371"],
+  ["002000001030000050000060040800000700000100300010000000400500000020000900060000400","974632581638914257215768940893547162167289435524031698481356729376195824952847316"],
+  ["003000002010000050000060040800000700000200100020000000400500000030000900060000400","974653812618924357235761940893547162167289435542013698481376529376195284952847316"],
+  ["004000001020000050000060030800000700000100200010000000300500000040000900060000400","974654831628913457235761940893547162167289345542036198481372569376195284952847316"],
+  ["005000002010000060000070030800000700000200100020000000300600000050000900070000400","974655812618923467235761940893547162167289345542036198481326759376195284952847316"],
+];
+
+// ===================== SAVE / LOAD =====================
+const SAVE_KEY = 'sudoku_save_v1';
+const SAVE_EXPIRY_DAYS = 30;
+
+function saveGame() {
+  if (state.gameOver || state.gameWon) {
+    localStorage.removeItem(SAVE_KEY);
+    return;
+  }
+  try {
+    const data = {
+      puzzle:     state.puzzle.map(r => r.join('')).join(''),
+      solved:     state.solved.map(r => r.join('')).join(''),
+      board:      state.board.map(r => r.join('')).join(''),
+      notes:      state.notes.map(r => r.map(s => [...s].join('')).join(',')).join('|'),
+      given:      state.given.map(r => r.map(v => v?1:0).join('')).join(''),
+      mistakes:   state.mistakes,
+      seconds:    state.seconds,
+      difficulty: state.difficulty,
+      saved:      Date.now()
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    // Check expiry
+    if (!data.saved || Date.now() - data.saved > SAVE_EXPIRY_DAYS * 86400000) {
+      localStorage.removeItem(SAVE_KEY);
+      return false;
+    }
+    const str2grid = s => Array.from({length:9}, (_,r) => Array.from({length:9}, (_,c) => +s[r*9+c]));
+    state.puzzle     = str2grid(data.puzzle);
+    state.solved     = str2grid(data.solved);
+    state.board      = str2grid(data.board);
+    state.given      = Array.from({length:9}, (_,r) => Array.from({length:9}, (_,c) => data.given[r*9+c]==='1'));
+    state.notes      = data.notes.split('|').map(row =>
+      row.split(',').map(s => new Set(s ? s.split('').map(Number) : []))
+    );
+    state.mistakes   = data.mistakes || 0;
+    state.seconds    = data.seconds  || 0;
+    state.difficulty = data.difficulty || 1;
+    state.selected   = null;
+    state.mode       = 'normal';
+    state.history    = [];
+    state.gameOver   = false;
+    state.gameWon    = false;
+    // Sync difficulty button
+    document.querySelectorAll('.diff-btn').forEach(b => {
+      b.classList.toggle('active', +b.dataset.d === state.difficulty);
+    });
+    updateMistakeDots();
+    renderBoard();
+    renderNumpad();
+    updateToolBtns();
+    startTimer();
+    return true;
+  } catch(e) {
+    localStorage.removeItem(SAVE_KEY);
+    return false;
+  }
+}
+
 // start!
-newGame();
+if (!loadGame()) newGame();
 </script>
 </body>
 </html>
